@@ -1,0 +1,25 @@
+{
+  "name": "donethat-obsidian",
+  "version": "0.1.0",
+  "description": "Add the work DoneThat recorded to your Obsidian daily note.",
+  "private": true,
+  "type": "module",
+  "main": "main.js",
+  "scripts": {
+    "build": "tsc --noEmit && node esbuild.config.mjs production",
+    "dev": "node esbuild.config.mjs",
+    "test": "tsx --test \"src/**/*.test.ts\"",
+    "typecheck": "tsc --noEmit"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@types/node": "22.10.2",
+    "esbuild": "0.25.0",
+    "obsidian": "1.14.4",
+    "tsx": "4.19.2",
+    "typescript": "5.7.2"
+  }
+}
