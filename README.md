@@ -43,7 +43,7 @@ By default the plugin adds to a daily note that already exists. Switch on **Crea
 ## Good to know
 
 - A day runs from midnight to midnight in your device's time zone. If you set a later day end in DoneThat, work after midnight shows on the next day's note.
-- Hidden tasks and time DoneThat does not include in your reports are not shown.
+- The note shows what DoneThat's report for that day contains. Change a task in DoneThat and the next update brings the note in line.
 
 ## Network use and privacy
 
