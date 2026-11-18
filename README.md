@@ -36,7 +36,7 @@ Shipped the new pricing page and cleared the support backlog.
 - **Add the work of this note's day** (command): available while a daily note is open; writes that day's work into it.
 - **Automatic updates:** while Obsidian is open, today's note is brought up to date every 30 minutes. Change the interval in the settings, or set it to 0 to switch this off.
 
-The plugin only ever changes the part of a note between its two markers. Running it again replaces that part in place; everything else in the note is left as it is. If the note has no block yet, one is added at the end.
+The plugin only ever changes the part of a note between its two markers. Running it again replaces that part in place; everything else in the note is left as it is. If the note has no block yet, one is added at the end. If one of the two markers was deleted, or there is more than one pair, the note is left untouched and the plugin says so: remove the leftover markers and run it again.
 
 By default the plugin adds to a daily note that already exists. Switch on **Create the daily note if it is missing** to have it create the note.
 

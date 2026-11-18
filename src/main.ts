@@ -1,6 +1,6 @@
 import {App, moment, normalizePath, Notice, Plugin, PluginSettingTab, SecretComponent, Setting, TFile} from "obsidian";
 import {DoneThatError, fetchSummary, fetchTasks} from "./api";
-import {buildBlock, dayRange, upsertBlock} from "./format";
+import {buildBlock, dateStem, dayRange, parentFolders, upsertBlock} from "./format";
 
 /** What the user can set. The API key itself is never stored here, only the name of the secret that holds it. */
 interface DoneThatSettings {
@@ -54,7 +54,9 @@ export default class DoneThatPlugin extends Plugin {
       name: "Add the work of this note's day",
       checkCallback: (checking: boolean) => {
         const file = this.app.workspace.getActiveFile();
-        const date = file ? moment(file.basename, this.settings.dateFormat, true) : null;
+        // The date is read from the path inside the daily notes folder: the format may contain folders.
+        const stem = file ? dateStem(file.path, normalizePath(this.settings.folder)) : null;
+        const date = stem ? moment(stem, this.settings.dateFormat, true) : null;
         if (!date || !date.isValid()) return false;
         if (!checking) void this.update(date, true);
         return true;
@@ -130,11 +132,21 @@ export default class DoneThatPlugin extends Plugin {
       if (!file) {
         // An automatic update does not create a note for a day nothing was recorded on.
         if (!byHand && rows.length === 0) return;
-        const folder = normalizePath(this.settings.folder);
-        if (folder && folder !== "/" && !this.app.vault.getAbstractFileByPath(folder)) await this.app.vault.createFolder(folder);
+        for (const folder of parentFolders(path)) {
+          if (!this.app.vault.getAbstractFileByPath(folder)) await this.app.vault.createFolder(folder);
+        }
         file = await this.app.vault.create(path, "");
       }
-      await this.app.vault.process(file as TFile, (note) => upsertBlock(note, block, this.settings.heading));
+      let damaged = false;
+      await this.app.vault.process(file as TFile, (note) => {
+        const next = upsertBlock(note, block, this.settings.heading);
+        damaged = next === null;
+        return next ?? note;
+      });
+      if (damaged) {
+        if (byHand) new Notice(`The DoneThat markers in ${path} are incomplete. Remove them, then run this again.`);
+        return;
+      }
       if (byHand) new Notice("Added the work DoneThat recorded.");
     } catch (error) {
       if (byHand) new Notice(error instanceof DoneThatError ? error.message : "Could not add the work from DoneThat.");
