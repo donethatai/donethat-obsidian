@@ -15,8 +15,6 @@ export interface ReportRow {
 /** What the block shows. */
 export interface DayWork {
   rows: ReportRow[];
-  /** The day's summary as plain text, when there is one. */
-  summary?: string;
 }
 
 export const BLOCK_START = "<!-- donethat:start -->";
@@ -41,7 +39,7 @@ export function formatMinutes(minutes: number): string {
 /**
  * Keeps text from DoneThat from containing one of the block's own markers,
  * which would make the block look damaged on the next update.
- * @param text Title or summary from DoneThat
+ * @param text Title from DoneThat
  * @return The text, with any marker written so that it is no longer one
  */
 function withoutMarkers(text: string): string {
@@ -58,9 +56,9 @@ function oneLine(text: string): string {
 }
 
 /**
- * Builds the Markdown block for one day: the total, the summary when there is
- * one, then projects with their tasks, longest first.
- * @param work Rows and summary of the day
+ * Builds the Markdown block for one day: the total, then projects with
+ * their tasks, longest first.
+ * @param work Rows of the day
  * @return The block, from its start marker to its end marker
  */
 export function buildBlock(work: DayWork): string {
@@ -82,8 +80,6 @@ export function buildBlock(work: DayWork): string {
   } else {
     lines.push(`**${formatMinutes(total)}** recorded.`);
   }
-  const summary = withoutMarkers(work.summary ?? "").trim();
-  if (summary) lines.push("", summary);
   if (projects.size > 0) {
     lines.push("");
     const sum = (tasks: Map<string, number>): number => [...tasks.values()].reduce((a, b) => a + b, 0);
