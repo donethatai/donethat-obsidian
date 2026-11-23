@@ -170,7 +170,7 @@ class DoneThatSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("API key")
-      .setDesc("Create a key in DoneThat under Settings, then API access, with the reports:read scope. It is kept in Obsidian's secret storage, not in this plugin's settings file.")
+      .setDesc("Create a key in DoneThat under Settings, Integrations, API access, with the reports:read scope. It is kept in Obsidian's secret storage, not in this plugin's settings file.")
       .addComponent((el) => new SecretComponent(this.app, el)
         .setValue(settings.apiKeySecret)
         .onChange(async (value) => {

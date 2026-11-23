@@ -3,7 +3,7 @@
 Obsidian plugin that writes the work DoneThat recorded into the daily note. One-way: it reads from DoneThat's public API and writes into the vault.
 
 - `src/format.ts`: pure logic (the Markdown block, placing it in a note). Tested in `src/format.test.ts`. Keep it free of Obsidian imports.
-- `src/api.ts`: the two read-only calls to `https://api.donethat.ai`.
+- `src/api.ts`: the read-only call to `https://api.donethat.ai`.
 - `src/main.ts`: the plugin, its commands and its settings tab.
 
 Rules that come from Obsidian's developer policies and must hold:
