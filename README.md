@@ -9,8 +9,6 @@ DoneThat is a time tracker that turns your captured work into tasks on its own. 
 <!-- donethat:start -->
 **6h 40m** recorded.
 
-Shipped the new pricing page and cleared the support backlog.
-
 - **Website** (4h 10m)
   - Pricing page layout (2h 30m)
   - Copy review with Sam (1h 40m)
@@ -22,7 +20,7 @@ Shipped the new pricing page and cleared the support backlog.
 ## What you need
 
 - **A DoneThat account.** The plugin does nothing without one.
-- **An API key.** API access is part of DoneThat's Core plan and above, which is paid. Create a key in DoneThat under Settings, then API access, with the `reports:read` scope.
+- **An API key.** API access is part of DoneThat's Core plan and above, which is paid. Create a key in DoneThat under Settings, Integrations, API access, with the `reports:read` scope.
 
 ## Setup
 
