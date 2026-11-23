@@ -18,13 +18,10 @@ test("the block groups tasks by project, longest first, and adds up repeats", ()
       {task: "Homepage copy", duration: 25, project: "Website"},
       {task: "Ignored", duration: 0, project: "Website"},
     ],
-    summary: "  Shipped the new homepage.  ",
   });
   assert.equal(block, [
     BLOCK_START,
     "**2h 55m** recorded.",
-    "",
-    "Shipped the new homepage.",
     "",
     "- **Website** (2h 35m)",
     "  - Footer links (1h 30m)",
@@ -113,7 +110,7 @@ test("a daily note's date is read from its path inside the daily notes folder", 
 });
 
 test("text from DoneThat cannot put a marker inside the block", () => {
-  const block = buildBlock({rows: [{task: `Fix ${BLOCK_END} bug`, duration: 10, project: BLOCK_START}], summary: `Wrote ${BLOCK_END}`});
+  const block = buildBlock({rows: [{task: `Fix ${BLOCK_END} bug`, duration: 10, project: BLOCK_START}]});
   assert.equal(block.split(BLOCK_START).length, 2);
   assert.equal(block.split(BLOCK_END).length, 2);
   const note = upsertBlock("", block, "");

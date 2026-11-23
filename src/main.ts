@@ -1,5 +1,5 @@
 import {App, moment, normalizePath, Notice, Plugin, PluginSettingTab, SecretComponent, Setting, TFile} from "obsidian";
-import {DoneThatError, fetchSummary, fetchTasks} from "./api";
+import {DoneThatError, fetchTasks} from "./api";
 import {buildBlock, dateStem, dayRange, parentFolders, upsertBlock} from "./format";
 
 /** What the user can set. The API key itself is never stored here, only the name of the secret that holds it. */
@@ -12,8 +12,6 @@ interface DoneThatSettings {
   dateFormat: string;
   /** Heading put above the block when it is first added. */
   heading: string;
-  /** Whether the day's summary is written above the task list. */
-  includeSummary: boolean;
   /** Whether a daily note that does not exist yet is created. */
   createNote: boolean;
   /** Minutes between updates of today's note while Obsidian is open. 0 switches this off. */
@@ -25,7 +23,6 @@ const DEFAULT_SETTINGS: DoneThatSettings = {
   folder: "",
   dateFormat: "YYYY-MM-DD",
   heading: "DoneThat",
-  includeSummary: true,
   createNote: false,
   autoUpdateMinutes: 30,
 };
@@ -126,8 +123,7 @@ export default class DoneThatPlugin extends Plugin {
 
       const range = dayRange(date.year(), date.month() + 1, date.date());
       const rows = await fetchTasks(apiKey, range.from, range.to);
-      const summary = this.settings.includeSummary ? await fetchSummary(apiKey, date.format("YYYY-MM-DD")) : null;
-      const block = buildBlock({rows, summary: summary ?? undefined});
+      const block = buildBlock({rows});
 
       if (!file) {
         // An automatic update does not create a note for a day nothing was recorded on.
@@ -211,16 +207,6 @@ class DoneThatSettingTab extends PluginSettingTab {
         .setValue(settings.heading)
         .onChange(async (value) => {
           settings.heading = value;
-          await this.plugin.saveSettings();
-        }));
-
-    new Setting(containerEl)
-      .setName("Include the day's summary")
-      .setDesc("Adds the summary DoneThat wrote for the day above the list of tasks.")
-      .addToggle((toggle) => toggle
-        .setValue(settings.includeSummary)
-        .onChange(async (value) => {
-          settings.includeSummary = value;
           await this.plugin.saveSettings();
         }));
 

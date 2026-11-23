@@ -81,17 +81,3 @@ export async function fetchTasks(apiKey: string, from: number, to: number): Prom
   if (status !== 200) throw failure(status, typeof json.error === "string" ? json.error : undefined);
   return Array.isArray(json.rows) ? (json.rows as ReportRow[]) : [];
 }
-
-/**
- * The summary DoneThat wrote for a day, as plain text.
- * @param apiKey The user's API key
- * @param date YYYY-MM-DD
- * @return The summary, or null when the day has none (or the key may not read summaries)
- */
-export async function fetchSummary(apiKey: string, date: string): Promise<string | null> {
-  const {status, json} = await call(apiKey, `/message?date=${encodeURIComponent(date)}&level=day&format=text`);
-  // No summary for the day, or a key without that scope: the tasks are still worth writing.
-  if (status === 404 || status === 400 || status === 403) return null;
-  if (status !== 200) throw failure(status, typeof json.error === "string" ? json.error : undefined);
-  return typeof json.content === "string" && json.content.trim() ? json.content.trim() : null;
-}

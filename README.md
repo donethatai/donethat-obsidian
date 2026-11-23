@@ -1,6 +1,6 @@
 # DoneThat for Obsidian
 
-Adds the work [DoneThat](https://donethat.ai) recorded to your daily note: the day's total, the summary DoneThat wrote, and your time per project and task.
+Adds the work [DoneThat](https://donethat.ai) recorded to your daily note: the day's total and your time per project and task.
 
 DoneThat is a time tracker that turns your captured work into tasks on its own. This plugin brings that record into your vault, so each daily note shows what you actually did that day.
 
@@ -22,7 +22,7 @@ Shipped the new pricing page and cleared the support backlog.
 ## What you need
 
 - **A DoneThat account.** The plugin does nothing without one.
-- **An API key.** API access is part of DoneThat's Core plan and above, which is paid. Create a key in DoneThat under Settings, then API access, with the `reports:read` scope. Add `summaries:read` if you want the day's summary too.
+- **An API key.** API access is part of DoneThat's Core plan and above, which is paid. Create a key in DoneThat under Settings, then API access, with the `reports:read` scope.
 
 ## Setup
 
@@ -50,7 +50,7 @@ By default the plugin adds to a daily note that already exists. Switch on **Crea
 This plugin talks to one service: `https://api.donethat.ai`, DoneThat's own API.
 
 - **What it sends:** your API key (in a request header) and the date it is asking about.
-- **What it receives:** your recorded tasks with their durations and projects, and the day's summary.
+- **What it receives:** your recorded tasks with their durations and projects.
 - **What it never sends:** your notes, their names, or anything else from your vault.
 
 There is no telemetry and no analytics in this plugin. How DoneThat handles your data is described at [donethat.ai/privacy](https://donethat.ai/privacy).
