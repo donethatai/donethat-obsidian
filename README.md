@@ -47,7 +47,7 @@ By default the plugin adds to a daily note that already exists. Switch on **Crea
 
 This plugin talks to one service: `https://api.donethat.ai`, DoneThat's own API.
 
-- **What it sends:** your API key (in a request header) and the date it is asking about.
+- **What it sends:** your API key (in a request header) and the start and end of the day it is asking about.
 - **What it receives:** your recorded tasks with their durations and projects.
 - **What it never sends:** your notes, their names, or anything else from your vault.
 
