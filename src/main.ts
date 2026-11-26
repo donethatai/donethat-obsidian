@@ -111,12 +111,12 @@ export default class DoneThatPlugin extends Plugin {
         return;
       }
       const path = normalizePath(`${this.settings.folder}/${date.format(this.settings.dateFormat)}.md`);
-      let file = this.app.vault.getAbstractFileByPath(path);
-      if (!file && !this.settings.createNote) {
+      const existing = this.app.vault.getAbstractFileByPath(path);
+      if (!existing && !this.settings.createNote) {
         if (byHand) new Notice(`There is no daily note at ${path} yet.`);
         return;
       }
-      if (file && !(file instanceof TFile)) {
+      if (existing && !(existing instanceof TFile)) {
         if (byHand) new Notice(`${path} is not a note.`);
         return;
       }
@@ -125,6 +125,7 @@ export default class DoneThatPlugin extends Plugin {
       const rows = await fetchTasks(apiKey, range.from, range.to);
       const block = buildBlock({rows});
 
+      let file = existing instanceof TFile ? existing : null;
       if (!file) {
         // An automatic update does not create a note for a day nothing was recorded on.
         if (!byHand && rows.length === 0) return;
@@ -134,7 +135,7 @@ export default class DoneThatPlugin extends Plugin {
         file = await this.app.vault.create(path, "");
       }
       let damaged = false;
-      await this.app.vault.process(file as TFile, (note) => {
+      await this.app.vault.process(file, (note) => {
         const next = upsertBlock(note, block, this.settings.heading);
         damaged = next === null;
         return next ?? note;

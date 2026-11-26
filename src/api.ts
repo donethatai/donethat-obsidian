@@ -2,9 +2,10 @@ import {requestUrl} from "obsidian";
 import {ReportRow} from "./format";
 
 /**
- * The two calls this plugin makes to DoneThat's public API. Both are read
- * only, both go to https://api.donethat.ai, and both carry the user's API key
- * in the `x-api-key` header. Nothing else is sent.
+ * The one call this plugin makes to DoneThat's public API. It is read only,
+ * goes to https://api.donethat.ai, and carries the user's API key in the
+ * `x-api-key` header and the day's start and end in its body. Nothing else
+ * is sent.
  */
 
 const API_BASE_URL = "https://api.donethat.ai";
