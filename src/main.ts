@@ -232,7 +232,7 @@ class DoneThatSettingTab extends PluginSettingTab {
   }
 
   /** The settings for Obsidian 1.13 and later. Values are read from the plugin's settings by Obsidian. */
-  getSettingDefinitions(): SettingDefinitionItem[] {
+  getSettingDefinitions(): SettingDefinitionItem<keyof DoneThatSettings>[] {
     return [
       {...LABELS.apiKeySecret, render: (setting) => this.addApiKey(setting)},
       {...LABELS.folder, control: {type: "text", key: "folder", placeholder: "Daily"}},
@@ -303,7 +303,7 @@ class DoneThatSettingTab extends PluginSettingTab {
   }
 
   /**
-   * Adds the date format field, with its preview of today's date.
+   * Adds the date format field.
    * @param setting The row to add it to
    */
   private addDateFormat(setting: Setting): void {
