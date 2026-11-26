@@ -2,14 +2,14 @@ import {test} from "node:test";
 import assert from "node:assert/strict";
 import {BLOCK_END, BLOCK_START, buildBlock, dateStem, dayRange, formatMinutes, parentFolders, upsertBlock} from "./format";
 
-test("minutes are shown as hours and minutes", () => {
+void test("minutes are shown as hours and minutes", () => {
   assert.equal(formatMinutes(45), "45m");
   assert.equal(formatMinutes(120), "2h");
   assert.equal(formatMinutes(65.4), "1h 5m");
   assert.equal(formatMinutes(-3), "0m");
 });
 
-test("the block groups tasks by project, longest first, and adds up repeats", () => {
+void test("the block groups tasks by project, longest first, and adds up repeats", () => {
   const block = buildBlock({
     rows: [
       {task: "Homepage copy", duration: 40, project: "Website"},
@@ -32,17 +32,17 @@ test("the block groups tasks by project, longest first, and adds up repeats", ()
   ].join("\n"));
 });
 
-test("a title cannot break out of its list line", () => {
+void test("a title cannot break out of its list line", () => {
   const block = buildBlock({rows: [{task: "# Heading\nsecond line", duration: 10, project: "- P"}]});
   assert.ok(block.includes("- **\\- P** (10m)"));
   assert.ok(block.includes("  - \\# Heading second line (10m)"));
 });
 
-test("a day without work says so", () => {
+void test("a day without work says so", () => {
   assert.equal(buildBlock({rows: []}), `${BLOCK_START}\nNothing recorded for this day.\n${BLOCK_END}`);
 });
 
-test("the block is added once, under its heading, and replaced in place afterwards", () => {
+void test("the block is added once, under its heading, and replaced in place afterwards", () => {
   const first = buildBlock({rows: [{task: "A", duration: 30, project: "P"}]});
   const note = "# 2026-11-18\n\nMy notes.\n";
   const added = upsertBlock(note, first, "DoneThat");
@@ -59,14 +59,14 @@ test("the block is added once, under its heading, and replaced in place afterwar
   assert.equal(upsertBlock(updated, second, "DoneThat"), updated, "running it again changes nothing");
 });
 
-test("an empty note gets just the block, and no heading when none is wanted", () => {
+void test("an empty note gets just the block, and no heading when none is wanted", () => {
   const block = buildBlock({rows: []});
   assert.equal(upsertBlock("", block, ""), `${block}\n`);
   assert.equal(upsertBlock("", block, "Work"), `## Work\n${block}\n`);
   assert.equal(upsertBlock("text", block, ""), `text\n\n${block}\n`);
 });
 
-test("a day runs from local midnight to the next", () => {
+void test("a day runs from local midnight to the next", () => {
   const range = dayRange(2026, 11, 18);
   assert.equal(new Date(range.from).getDate(), 18);
   assert.equal(new Date(range.from).getHours(), 0);
@@ -74,7 +74,7 @@ test("a day runs from local midnight to the next", () => {
   assert.ok(range.to - range.from >= 23 * 3600_000 && range.to - range.from <= 25 * 3600_000);
 });
 
-test("a note whose markers are damaged is left alone, so no text of the user's is ever deleted", () => {
+void test("a note whose markers are damaged is left alone, so no text of the user's is ever deleted", () => {
   const block = buildBlock({rows: [{task: "A", duration: 30, project: "P"}]});
   const added = upsertBlock("Before.\n", block, "DoneThat");
   assert.ok(added !== null);
@@ -91,14 +91,14 @@ test("a note whose markers are damaged is left alone, so no text of the user's i
   assert.equal(upsertBlock(`${block}\nmine\n${block}\n`, block, ""), null, "two blocks");
 });
 
-test("every folder on the way to a note is listed, outermost first", () => {
+void test("every folder on the way to a note is listed, outermost first", () => {
   assert.deepEqual(parentFolders("2026-11-18.md"), []);
   assert.deepEqual(parentFolders("Daily/2026-11-18.md"), ["Daily"]);
   assert.deepEqual(parentFolders("Daily/2026/11/18.md"), ["Daily", "Daily/2026", "Daily/2026/11"]);
   assert.deepEqual(parentFolders("/2026/11/18.md"), ["2026", "2026/11"]);
 });
 
-test("a daily note's date is read from its path inside the daily notes folder", () => {
+void test("a daily note's date is read from its path inside the daily notes folder", () => {
   assert.equal(dateStem("Daily/2026/11/18.md", "Daily"), "2026/11/18");
   assert.equal(dateStem("Daily/2026-11-18.md", "Daily/"), "2026-11-18");
   assert.equal(dateStem("2026/11/18.md", ""), "2026/11/18");
@@ -109,7 +109,7 @@ test("a daily note's date is read from its path inside the daily notes folder", 
   assert.equal(dateStem("Daily/.md", "Daily"), null);
 });
 
-test("text from DoneThat cannot put a marker inside the block", () => {
+void test("text from DoneThat cannot put a marker inside the block", () => {
   const block = buildBlock({rows: [{task: `Fix ${BLOCK_END} bug`, duration: 10, project: BLOCK_START}]});
   assert.equal(block.split(BLOCK_START).length, 2);
   assert.equal(block.split(BLOCK_END).length, 2);

@@ -1,4 +1,15 @@
-import {App, moment, normalizePath, Notice, Plugin, PluginSettingTab, SecretComponent, Setting, TFile} from "obsidian";
+import {
+  App,
+  moment as obsidianMoment,
+  normalizePath,
+  Notice,
+  Plugin,
+  PluginSettingTab,
+  SecretComponent,
+  Setting,
+  SettingDefinitionItem,
+  TFile,
+} from "obsidian";
 import {DoneThatError, fetchTasks} from "./api";
 import {buildBlock, dateStem, dayRange, parentFolders, upsertBlock} from "./format";
 
@@ -30,6 +41,50 @@ const DEFAULT_SETTINGS: DoneThatSettings = {
 /** Shortest time between two automatic updates, whatever the setting says. */
 const MIN_AUTO_UPDATE_MINUTES = 5;
 
+/**
+ * The two ways the plugin calls Obsidian's Moment.js. obsidian.d.ts types `moment` as `typeof import("moment")`,
+ * which loses its call signatures under esModuleInterop (TypeScript 6's default, and the community scanner's setup).
+ */
+interface MomentCalls {
+  /** Now. */
+  (): moment.Moment;
+  /** A date read from text in a format; strict rejects text that does not match the format exactly. */
+  (input: string, format: string, strict: boolean): moment.Moment;
+}
+
+/** Obsidian's Moment.js, typed for the calls above. */
+const moment = obsidianMoment as unknown as MomentCalls;
+
+/**
+ * How each setting is cleaned up before it is stored, whichever settings screen changed it. The folder is stored as
+ * typed and trimmed where it is used: Obsidian may redraw a control with the stored value, which would eat a space
+ * the user is still typing.
+ */
+const CLEAN: {[K in keyof DoneThatSettings]: (value: DoneThatSettings[K]) => DoneThatSettings[K]} = {
+  apiKeySecret: (value) => value,
+  folder: (value) => value,
+  dateFormat: (value) => value.trim() || DEFAULT_SETTINGS.dateFormat,
+  heading: (value) => value,
+  createNote: (value) => value,
+  autoUpdateMinutes: (value) => (Number.isFinite(value) && value >= 0 ? Math.round(value) : 0),
+};
+
+/** Names and descriptions of the settings, shared by the declarative tab (1.13 and later) and the drawn one. */
+const LABELS: {[K in keyof DoneThatSettings]: {name: string; desc: string}} = {
+  apiKeySecret: {
+    name: "API key",
+    desc: "Create a key in DoneThat under Settings, Integrations, API access, with the reports:read scope. It is kept in Obsidian's secret storage, not in this plugin's settings file.",
+  },
+  folder: {name: "Daily notes folder", desc: "Where your daily notes are, relative to the vault. Leave empty for the top level."},
+  dateFormat: {name: "Date format", desc: "How your daily notes are named. Use the same format as in your daily notes settings."},
+  heading: {name: "Heading", desc: "Put above the work when it is first added to a note. Leave empty for no heading."},
+  createNote: {name: "Create the daily note if it is missing", desc: "When off, work is only added to a daily note that already exists."},
+  autoUpdateMinutes: {
+    name: "Update today's note every",
+    desc: "Minutes between updates while Obsidian is open. 0 switches automatic updates off; the commands still work.",
+  },
+};
+
 /** Adds the work DoneThat recorded to the daily note. */
 export default class DoneThatPlugin extends Plugin {
   settings: DoneThatSettings = DEFAULT_SETTINGS;
@@ -52,7 +107,7 @@ export default class DoneThatPlugin extends Plugin {
       checkCallback: (checking: boolean) => {
         const file = this.app.workspace.getActiveFile();
         // The date is read from the path inside the daily notes folder: the format may contain folders.
-        const stem = file ? dateStem(file.path, normalizePath(this.settings.folder)) : null;
+        const stem = file ? dateStem(file.path, normalizePath(this.settings.folder.trim())) : null;
         const date = stem ? moment(stem, this.settings.dateFormat, true) : null;
         if (!date || !date.isValid()) return false;
         if (!checking) void this.update(date, true);
@@ -75,6 +130,16 @@ export default class DoneThatPlugin extends Plugin {
   /** Reads the stored settings over the defaults. */
   async loadSettings(): Promise<void> {
     this.settings = {...DEFAULT_SETTINGS, ...((await this.loadData()) as Partial<DoneThatSettings> | null)};
+  }
+
+  /**
+   * Cleans up and stores one changed setting.
+   * @param key The setting
+   * @param value Its new value, as the user entered it
+   */
+  async setSetting<K extends keyof DoneThatSettings>(key: K, value: DoneThatSettings[K]): Promise<void> {
+    this.settings[key] = CLEAN[key](value);
+    await this.saveSettings();
   }
 
   /** Stores the settings and applies a changed update interval. */
@@ -110,7 +175,7 @@ export default class DoneThatPlugin extends Plugin {
         if (byHand) new Notice("Add your DoneThat API key in the plugin settings first.");
         return;
       }
-      const path = normalizePath(`${this.settings.folder}/${date.format(this.settings.dateFormat)}.md`);
+      const path = normalizePath(`${this.settings.folder.trim()}/${date.format(this.settings.dateFormat)}.md`);
       const existing = this.app.vault.getAbstractFileByPath(path);
       if (!existing && !this.settings.createNote) {
         if (byHand) new Notice(`There is no daily note at ${path} yet.`);
@@ -153,7 +218,10 @@ export default class DoneThatPlugin extends Plugin {
   }
 }
 
-/** The plugin's settings tab. */
+/**
+ * The plugin's settings tab. Obsidian 1.13 and later build it from getSettingDefinitions(), which also puts the
+ * settings in the settings search; older versions call display(). Both use the same labels and clean-up.
+ */
 class DoneThatSettingTab extends PluginSettingTab {
   /**
    * @param app The app
@@ -163,73 +231,85 @@ class DoneThatSettingTab extends PluginSettingTab {
     super(app, plugin);
   }
 
-  /** Draws the settings. */
+  /** The settings for Obsidian 1.13 and later. Values are read from the plugin's settings by Obsidian. */
+  getSettingDefinitions(): SettingDefinitionItem<keyof DoneThatSettings>[] {
+    return [
+      {...LABELS.apiKeySecret, render: (setting) => this.addApiKey(setting)},
+      {...LABELS.folder, control: {type: "text", key: "folder", placeholder: "Daily"}},
+      {...LABELS.dateFormat, render: (setting) => this.addDateFormat(setting)},
+      {...LABELS.heading, control: {type: "text", key: "heading"}},
+      {...LABELS.createNote, control: {type: "toggle", key: "createNote"}},
+      {...LABELS.autoUpdateMinutes, control: {type: "number", key: "autoUpdateMinutes", min: 0, step: 1}},
+    ];
+  }
+
+  /**
+   * Stores a value changed through one of the controls above.
+   * @param key The setting
+   * @param value Its new value
+   */
+  async setControlValue(key: string, value: unknown): Promise<void> {
+    switch (key) {
+      case "folder":
+      case "heading":
+        if (typeof value === "string") await this.plugin.setSetting(key, value);
+        break;
+      case "createNote":
+        if (typeof value === "boolean") await this.plugin.setSetting(key, value);
+        break;
+      case "autoUpdateMinutes":
+        if (typeof value === "number") await this.plugin.setSetting(key, value);
+        break;
+    }
+  }
+
+  /** Draws the settings on Obsidian versions before 1.13. */
   display(): void {
     const {containerEl} = this;
     containerEl.empty();
     const settings = this.plugin.settings;
+    const row = (labels: {name: string; desc: string}) => new Setting(containerEl).setName(labels.name).setDesc(labels.desc);
 
-    new Setting(containerEl)
-      .setName("API key")
-      .setDesc("Create a key in DoneThat under Settings, Integrations, API access, with the reports:read scope. It is kept in Obsidian's secret storage, not in this plugin's settings file.")
-      .addComponent((el) => new SecretComponent(this.app, el)
-        .setValue(settings.apiKeySecret)
-        .onChange(async (value) => {
-          settings.apiKeySecret = value ?? "";
-          await this.plugin.saveSettings();
-        }));
+    this.addApiKey(row(LABELS.apiKeySecret));
 
-    new Setting(containerEl)
-      .setName("Daily notes folder")
-      .setDesc("Where your daily notes are, relative to the vault. Leave empty for the top level.")
-      .addText((text) => text
-        .setPlaceholder("Daily")
-        .setValue(settings.folder)
-        .onChange(async (value) => {
-          settings.folder = value.trim();
-          await this.plugin.saveSettings();
-        }));
+    row(LABELS.folder).addText((text) => text
+      .setPlaceholder("Daily")
+      .setValue(settings.folder)
+      .onChange((value) => this.plugin.setSetting("folder", value)));
 
-    new Setting(containerEl)
-      .setName("Date format")
-      .setDesc("How your daily notes are named. Use the same format as in your daily notes settings.")
-      .addMomentFormat((format) => format
-        .setDefaultFormat(DEFAULT_SETTINGS.dateFormat)
-        .setValue(settings.dateFormat)
-        .onChange(async (value) => {
-          settings.dateFormat = value.trim() || DEFAULT_SETTINGS.dateFormat;
-          await this.plugin.saveSettings();
-        }));
+    this.addDateFormat(row(LABELS.dateFormat));
 
-    new Setting(containerEl)
-      .setName("Heading")
-      .setDesc("Put above the work when it is first added to a note. Leave empty for no heading.")
-      .addText((text) => text
-        .setValue(settings.heading)
-        .onChange(async (value) => {
-          settings.heading = value;
-          await this.plugin.saveSettings();
-        }));
+    row(LABELS.heading).addText((text) => text
+      .setValue(settings.heading)
+      .onChange((value) => this.plugin.setSetting("heading", value)));
 
-    new Setting(containerEl)
-      .setName("Create the daily note if it is missing")
-      .setDesc("When off, work is only added to a daily note that already exists.")
-      .addToggle((toggle) => toggle
-        .setValue(settings.createNote)
-        .onChange(async (value) => {
-          settings.createNote = value;
-          await this.plugin.saveSettings();
-        }));
+    row(LABELS.createNote).addToggle((toggle) => toggle
+      .setValue(settings.createNote)
+      .onChange((value) => this.plugin.setSetting("createNote", value)));
 
-    new Setting(containerEl)
-      .setName("Update today's note every")
-      .setDesc("Minutes between updates while Obsidian is open. 0 switches automatic updates off; the commands still work.")
-      .addText((text) => text
-        .setValue(String(settings.autoUpdateMinutes))
-        .onChange(async (value) => {
-          const minutes = Number(value);
-          settings.autoUpdateMinutes = Number.isFinite(minutes) && minutes >= 0 ? Math.round(minutes) : 0;
-          await this.plugin.saveSettings();
-        }));
+    row(LABELS.autoUpdateMinutes).addText((text) => text
+      .setValue(String(settings.autoUpdateMinutes))
+      .onChange((value) => this.plugin.setSetting("autoUpdateMinutes", Number(value))));
+  }
+
+  /**
+   * Adds the picker for the secret that holds the API key.
+   * @param setting The row to add it to
+   */
+  private addApiKey(setting: Setting): void {
+    setting.addComponent((el) => new SecretComponent(this.app, el)
+      .setValue(this.plugin.settings.apiKeySecret)
+      .onChange((value) => this.plugin.setSetting("apiKeySecret", value ?? "")));
+  }
+
+  /**
+   * Adds the date format field.
+   * @param setting The row to add it to
+   */
+  private addDateFormat(setting: Setting): void {
+    setting.addMomentFormat((format) => format
+      .setDefaultFormat(DEFAULT_SETTINGS.dateFormat)
+      .setValue(this.plugin.settings.dateFormat)
+      .onChange((value) => this.plugin.setSetting("dateFormat", value)));
   }
 }
