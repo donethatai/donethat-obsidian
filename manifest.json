@@ -1,7 +1,7 @@
 {
   "id": "donethat",
   "name": "DoneThat",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "minAppVersion": "1.11.4",
   "description": "Add the work DoneThat recorded to your daily note: time per project and task.",
   "author": "DoneThat",

@@ -1,6 +1,6 @@
 {
   "name": "donethat-obsidian",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Add the work DoneThat recorded to your Obsidian daily note.",
   "private": true,
   "type": "module",
